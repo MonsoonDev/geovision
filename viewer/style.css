@@ -77,6 +77,25 @@ h1 {
   color: #fff;
 }
 
+.edit-toggle {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.edit-toggle[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--panel);
+  border-color: var(--ink);
+}
+
 body.is-3d .mode-switch button[aria-pressed="true"] {
   background: #1d4ed8;
 }
@@ -125,6 +144,73 @@ main {
   align-items: flex-start;
   gap: 8px;
   max-width: calc(100% - 24px);
+}
+
+.tools[hidden] { display: none; }
+
+.camera-dock {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.gizmo,
+.camera-zoom {
+  pointer-events: auto;
+}
+
+.gizmo {
+  width: 96px;
+  height: 96px;
+  display: block;
+  touch-action: none;
+  cursor: grab;
+  filter: drop-shadow(0 1px 2px rgba(28, 25, 23, 0.12));
+}
+
+.gizmo:active { cursor: grabbing; }
+
+.gizmo text {
+  font: 700 9px "Segoe UI", sans-serif;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.camera-zoom {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.camera-zoom button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font: 600 16px "Segoe UI", sans-serif;
+  line-height: 1;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.camera-zoom button svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.camera-zoom button:hover {
+  border-color: #c4b8a8;
 }
 
 .tool-row,
@@ -201,6 +287,30 @@ main {
   margin: 0;
   color: var(--muted);
   font-size: 12px;
+  pointer-events: none;
+}
+
+body.is-editing #hint {
+  bottom: 34px;
+}
+
+#cam-lock {
+  position: absolute;
+  left: 16px;
+  bottom: 12px;
+  margin: 0;
+  color: #ca8a04;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+  text-shadow: 0 0 4px var(--paper), 0 0 4px var(--paper);
+}
+
+#cam-lock[hidden] { display: none; }
+
+body.is-editing .camera-dock {
+  opacity: 0.38;
   pointer-events: none;
 }
 

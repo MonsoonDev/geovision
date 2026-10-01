@@ -135,11 +135,14 @@ def test_serve_returns_the_viewer_and_scene(tmp_path):
     thread.start()
     try:
         page = urllib.request.urlopen(f"http://127.0.0.1:{port}/").read().decode("utf-8")
+        script = urllib.request.urlopen(f"http://127.0.0.1:{port}/camera.js").read().decode("utf-8")
         body = json.loads(urllib.request.urlopen(f"http://127.0.0.1:{port}/scene").read().decode("utf-8"))
     finally:
         httpd.shutdown()
         httpd.server_close()
     assert "GeoVision" in page
+    assert 'id="edit-toggle"' in page
+    assert "initCamera" in script
     assert body["objects"][0]["id"] == "A"
 
 

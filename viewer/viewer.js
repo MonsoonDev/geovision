@@ -13,6 +13,7 @@ const state = {
   camKey: "",
   drag: null,
   tool: "pan",
+  editing: false,
   note: "",
   draft: null,
   keepView: false,
@@ -39,6 +40,7 @@ document.querySelector("#step").addEventListener("input", (event) => {
 svg.addEventListener("pointerdown", (event) => {
   if (event.button !== 0) return;
   if (state.onPointerDown && state.onPointerDown(event)) return;
+  if (state.editing) return;
   state.drag = { x: event.clientX, y: event.clientY, bounds: { ...state.bounds } };
   svg.classList.add("dragging");
   svg.setPointerCapture(event.pointerId);
@@ -81,6 +83,7 @@ svg.addEventListener(
   "wheel",
   (event) => {
     event.preventDefault();
+    if (state.editing || !state.scene) return;
     const [mx, my] = clientToMath(event.clientX, event.clientY, state.bounds);
     const factor = event.deltaY > 0 ? 1.1 : 0.9;
     const b = state.bounds;
@@ -97,7 +100,7 @@ svg.addEventListener(
 
 svg.addEventListener("dblclick", (event) => {
   if (state.onDouble && state.onDouble(event)) return;
-  if (!state.scene) return;
+  if (!state.scene || state.editing) return;
   state.bounds = computeBounds(state.scene);
   draw2d(state.scene);
 });
@@ -251,6 +254,18 @@ function renderList(scene) {
   }
 }
 
+function syncChrome(scene) {
+  const mode = scene && scene.view && scene.view.mode === "3d" ? "3d" : "2d";
+  const editing = !!state.editing;
+  document.body.classList.toggle("is-editing", editing);
+  document.querySelector("#edit-toggle").setAttribute("aria-pressed", editing ? "true" : "false");
+  document.querySelector("#tools").hidden = !editing;
+  document.querySelector("#graph-form").hidden = !editing || mode === "3d";
+  document.querySelector("#graph-note").hidden = !editing || mode !== "3d";
+  document.querySelector("#cam-lock").hidden = !editing;
+  if (state.syncControls) state.syncControls();
+}
+
 async function render() {
   const scene = state.scene;
   if (!scene) return;
@@ -263,8 +278,7 @@ async function render() {
   document.body.classList.toggle("is-3d", mode === "3d");
   document.querySelector("#mode-2d").setAttribute("aria-pressed", mode === "2d" ? "true" : "false");
   document.querySelector("#mode-3d").setAttribute("aria-pressed", mode === "3d" ? "true" : "false");
-  document.querySelector("#graph-form").hidden = mode === "3d";
-  document.querySelector("#graph-note").hidden = mode !== "3d";
+  syncChrome(scene);
   svg.hidden = mode === "3d";
   view3d.hidden = mode !== "3d";
   const key = geometryKey(scene);
@@ -273,7 +287,11 @@ async function render() {
     if (!state.keepView) state.bounds = computeBounds(scene);
   }
   state.keepView = false;
-  hint.textContent = state.note || (mode === "3d" ? "Drag to orbit." : "Drag to pan. Scroll to zoom.");
+  if (state.editing) {
+    hint.textContent = state.note || "";
+  } else {
+    hint.textContent = mode === "3d" ? "Drag to orbit." : "Drag to pan. Scroll to zoom.";
+  }
   if (mode === "2d") {
     draw2d(scene);
   } else {
@@ -306,6 +324,7 @@ function draw2d(scene) {
   });
   for (const obj of objects) drawObject(obj, bounds, unit);
   drawDraft(unit);
+  if (state.updateGizmo) state.updateGizmo();
 }
 
 function unitsPerPx(bounds) {
@@ -936,7 +955,10 @@ async function ensureThree() {
   gfx.labels.domElement.style.pointerEvents = "none";
   view3d.appendChild(gfx.labels.domElement);
   gfx.controls = new OrbitControls(gfx.camera, gfx.renderer.domElement);
-  gfx.controls.addEventListener("change", renderFrame);
+  gfx.controls.addEventListener("change", () => {
+    renderFrame();
+    if (state.updateGizmo) state.updateGizmo();
+  });
   if (state.syncControls) state.syncControls();
   gfx.ready = true;
   new ResizeObserver(() => resize3d()).observe(view3d);
@@ -977,6 +999,7 @@ function renderFrame() {
   gfx.renderer.render(gfx.scene, gfx.camera);
   placeMarks();
   gfx.labels.render(gfx.scene, gfx.camera);
+  if (state.updateGizmo) state.updateGizmo();
 }
 
 async function poll() {
@@ -1000,8 +1023,10 @@ async function poll() {
 }
 
 import { initDraw } from "./draw.js";
+import { initCamera } from "./camera.js";
 
-initDraw({ state, svg, view3d, hint, gfx, clientToMath, draw2d, render, unitsPerPx });
+initDraw({ state, svg, view3d, hint, gfx, clientToMath, draw2d, render, unitsPerPx, syncChrome });
+initCamera({ state, gfx, draw2d, computeBounds, renderFrame });
 
 poll();
 setInterval(poll, 400);

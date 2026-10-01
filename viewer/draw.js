@@ -11,7 +11,7 @@ const NOTES = {
   erase: "Click a shape to remove it.",
 };
 
-export function initDraw({ state, svg, view3d, hint, gfx, clientToMath, draw2d, render }) {
+export function initDraw({ state, svg, view3d, hint, gfx, clientToMath, draw2d, render, syncChrome }) {
   const row = document.querySelector("#tool-row");
   const form = document.querySelector("#graph-form");
   let shape = null;
@@ -273,7 +273,7 @@ export function initDraw({ state, svg, view3d, hint, gfx, clientToMath, draw2d, 
   }
 
   state.onPointerDown = (event) => {
-    if (!state.scene || event.button !== 0) return false;
+    if (!state.editing || !state.scene || event.button !== 0) return false;
     const tool = state.tool || "pan";
     if (tool === "pan") {
       const hit = snapPoint(event);
@@ -362,8 +362,24 @@ export function initDraw({ state, svg, view3d, hint, gfx, clientToMath, draw2d, 
   state.onDouble = () => state.tool === "polygon";
 
   state.syncControls = () => {
-    if (gfx.controls) gfx.controls.enabled = (state.tool || "pan") === "pan";
+    if (gfx.controls) gfx.controls.enabled = !state.editing;
   };
+
+  function setEditing(on) {
+    state.editing = !!on;
+    if (!state.editing) setTool("pan");
+    if (syncChrome) syncChrome(state.scene);
+    if (!state.editing) {
+      hint.textContent = is3d() ? "Drag to orbit." : "Drag to pan. Scroll to zoom.";
+    } else if (!state.note) {
+      hint.textContent = "";
+    }
+    if (state.scene && !is3d()) draw2d(state.scene);
+  }
+
+  document.querySelector("#edit-toggle").addEventListener("click", () => {
+    setEditing(!state.editing);
+  });
 
   function setTool(tool) {
     state.tool = tool;
@@ -376,7 +392,7 @@ export function initDraw({ state, svg, view3d, hint, gfx, clientToMath, draw2d, 
     for (const button of row.querySelectorAll("button")) {
       button.setAttribute("aria-pressed", button.dataset.tool === tool ? "true" : "false");
     }
-    hint.textContent = state.note || (is3d() ? "Drag to orbit." : "Drag to pan. Scroll to zoom.");
+    hint.textContent = state.note || (state.editing ? "" : is3d() ? "Drag to orbit." : "Drag to pan. Scroll to zoom.");
     if (state.scene && !is3d()) draw2d(state.scene);
   }
 
@@ -437,7 +453,7 @@ export function initDraw({ state, svg, view3d, hint, gfx, clientToMath, draw2d, 
     if (event.key !== "Escape") return;
     clearShape();
     state.note = NOTES[state.tool] || "";
-    hint.textContent = state.note || (is3d() ? "Drag to orbit." : "Drag to pan. Scroll to zoom.");
+    hint.textContent = state.note || (state.editing ? "" : is3d() ? "Drag to orbit." : "Drag to pan. Scroll to zoom.");
     if (state.scene && !is3d()) draw2d(state.scene);
   });
 
@@ -445,7 +461,7 @@ export function initDraw({ state, svg, view3d, hint, gfx, clientToMath, draw2d, 
     view3d.addEventListener(
       type,
       (event) => {
-        if (!is3d()) return;
+        if (!is3d() || !state.editing) return;
         const handled =
           type === "pointerdown"
             ? state.onPointerDown(event)

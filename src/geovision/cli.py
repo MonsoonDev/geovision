@@ -53,6 +53,7 @@ def make_handler(scene_path: Path, assets: Path):
                 "/index.html": assets / "index.html",
                 "/viewer.js": assets / "viewer.js",
                 "/draw.js": assets / "draw.js",
+                "/camera.js": assets / "camera.js",
                 "/style.css": assets / "style.css",
             }
             file = files.get(path)
