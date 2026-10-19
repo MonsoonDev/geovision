@@ -122,6 +122,15 @@ def test_validate_and_help(tmp_path, capsys):
     assert "circumcircle" in capsys.readouterr().out
 
 
+def test_viewer_assets_ship_inside_the_package():
+    from geovision.cli import viewer_dir
+
+    assets = viewer_dir()
+    assert assets.parent.name == "geovision"
+    for name in ("index.html", "viewer.js", "draw.js", "camera.js", "style.css"):
+        assert (assets / name).is_file()
+
+
 def test_serve_returns_the_viewer_and_scene(tmp_path):
     import json
     import threading

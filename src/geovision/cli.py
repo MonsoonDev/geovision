@@ -29,9 +29,6 @@ def viewer_dir() -> Path:
     packaged = Path(__file__).resolve().parent / "viewer"
     if (packaged / "index.html").is_file():
         return packaged
-    root = Path(__file__).resolve().parents[2] / "viewer"
-    if (root / "index.html").is_file():
-        return root
     raise SystemExit("viewer assets not found")
 
 
